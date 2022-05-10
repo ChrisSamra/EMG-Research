@@ -23,9 +23,10 @@ def record_procedure(stop, board, args):
         sleep(1)
 
   
-    data = board.get_board_data().transpose()[:,1:9]
+    data = board.get_board_data().transpose()[:,1:23] #kill cols
     board.stop_stream()
     
+    # useful prints for debugging 
     # print(data)
     # print(np.shape(data))
     # print(data[1])
@@ -34,14 +35,25 @@ def record_procedure(stop, board, args):
   
     # Create header row
     header = []
-    for i in range(1, 9):
-        # if i == 1:
-        #     header.append('Time') 
-        # else:
+    for i in range(1, 10):
+        if i == 9:
+            header.append('Time') 
+        else:
             header.append('CH{}'.format(i))
 
+    #getting rid of useless data channels
+    data_del = np.delete(data, slice(8, 21), 1)
+    data = data_del
+
+    #convert to pandas dataframe
     data = pd.DataFrame(data, columns=header)
+
+    #rearange col format
+    data = data[['Time', 'CH1', 'CH2', 'CH3', 'CH4', 'CH5', 'CH6', 'CH7', 'CH8']]
+
+    #convert dataframe to csv
     data.to_csv("EMG-Recorder/Recordings/" + filename + ".csv", index=False)
+
     Cyton_Board_End(board)
 
 
@@ -99,7 +111,6 @@ if __name__ == '__main__':
     x = datetime.datetime.now()
 
     global filename 
-    filename = "bruh"
     filename =  f"{x.strftime('%j')}_{x.strftime('%Y')}_{x.strftime('%f')}" #day of year, year, millisecond
     
     # BCI Config
