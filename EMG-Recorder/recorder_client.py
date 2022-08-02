@@ -3,36 +3,23 @@ from brainflow.board_shim import BoardShim, BrainFlowInputParams
 import sys, random, threading, datetime
 import numpy as np
 import pandas as pd
-import argparse, socket, pickle
+import argparse
+import keyboard
 
 # Variables to change parameters of the test
 BOARDID = 0 #cyton 8ch
-START_DELAY = 20 # 20 Seconds
-REC_TIME = 5 
+REC_TIME = 2000
 
-def record_procedure(stop, board, args):
-   
-    start_time = time()
+def csv_export(data):
 
-    board.start_stream(450000, args)
-    sleep(1)
-
-    # board.insert_marker(0.666) # insert marker api call for future reference
-    
-    for x in range(int(REC_TIME)):
-        sleep(1)
-
-  
-    data = board.get_board_data().transpose()[:,1:23] #kill cols
-    board.stop_stream()
-    
     # useful prints for debugging 
     # print(data)
     # print(np.shape(data))
     # print(data[1])
     # print(np.shape(data[1]))
     # print(len(data))
-  
+
+
     # Create header row
     header = []
     for i in range(1, 10):
@@ -53,10 +40,6 @@ def record_procedure(stop, board, args):
 
     #convert dataframe to csv
     data.to_csv("EMG-Recorder/Recordings/" + filename + ".csv", index=False)
-
-    Cyton_Board_End(board)
-
-
 
 def Cyton_Board_Config(purpose):
     
@@ -97,7 +80,7 @@ def Cyton_Board_Config(purpose):
     # if purpose=true we're running the whole thing
     # else we're just running the demo
     if purpose:
-        board.start_stream(45000, args.streamer_params)
+        board.start_stream(450000, args.streamer_params)
         return board
     else:
         return [board, args.streamer_params]
@@ -105,6 +88,25 @@ def Cyton_Board_Config(purpose):
 def Cyton_Board_End(board):
     board.release_session()
     return
+
+
+def record(stop, board, args):
+    start_time = time()
+    
+    board.start_stream(450000, args)
+    sleep(1)
+
+    for x in range(int(REC_TIME)):
+        sleep(1)
+        if keyboard.is_pressed('q'):
+            break
+  
+    data = board.get_board_data().transpose()[:,1:23] #kill cols
+    board.stop_stream()
+
+    csv_export(data)
+    Cyton_Board_End(board)
+
 
 if __name__ == '__main__':
     # File config
@@ -119,7 +121,7 @@ if __name__ == '__main__':
     global testing
     testing = False
     stopThread = False
-    x = threading.Thread(target=record_procedure, args=(lambda: stopThread, board_details[0], board_details[1]))
+    x = threading.Thread(target=record, args=(lambda: stopThread, board_details[0], board_details[1]))
     x.start()
 
     
